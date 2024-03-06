@@ -13,8 +13,6 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// Assume Game struct is defined as previously shown
-
 var (
 	lock sync.Mutex
 )
@@ -32,10 +30,47 @@ func StartAPI() {
 	r.HandleFunc("/game/{gameID}/join", joinGameHandler).Methods("POST")
 	r.HandleFunc("/game/{gameID}/move", makeMoveHandler).Methods("POST")
 	r.HandleFunc("/game/{gameID}/state/", GetGameStateHandler).Methods("GET")
+	r.HandleFunc("/game/{gameID}/restart", RequestRestart).Methods("POST")
 	r.HandleFunc("/ws/game/state/{gameID}", websocket.GameWebSocketHandler)
 
 	fmt.Println("Server started on http://localhost:8080")
 	http.ListenAndServe(":8080", r)
+}
+
+func RequestRestart(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	gameID, ok := vars["gameID"]
+	if !ok {
+		http.Error(w, "Game ID is required", http.StatusBadRequest)
+		return
+	}
+
+	playerID := r.URL.Query().Get("playerID")
+	if playerID == "" {
+		http.Error(w, "Player ID is required", http.StatusBadRequest)
+		return
+	}
+
+	lock.Lock()
+	defer lock.Unlock()
+
+	game, exists := utils.Games[gameID]
+	if !exists {
+		http.Error(w, "Game not found", http.StatusNotFound)
+		return
+	}
+
+	if !game.IsValidPlayer(playerID) {
+		http.Error(w, "Invalid player", http.StatusBadRequest)
+		return
+	}
+
+	game.RequestRestart(playerID)
+
+	response := map[string]string{"message": "Restart request acknowledged."}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }
 
 func GetGameStateHandler(w http.ResponseWriter, r *http.Request) {
@@ -82,6 +117,7 @@ func createGameHandler(w http.ResponseWriter, r *http.Request) {
 	gameID := utils.GenerateUUIDString()
 	newGame := game.NewGame(gameID, playerID)
 	utils.Games[gameID] = newGame
+	newGame.PublishState()
 
 	response := map[string]string{"gameID": gameID}
 	w.Header().Set("Content-Type", "application/json")
@@ -106,8 +142,7 @@ func joinGameHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	game.Players[1] = playerID // Set Player 2
-	game.Status = "active"
+	game.AddSecondPlayer(playerID)
 
 	response := map[string]string{"message": fmt.Sprintf("Player %s successfully joined the game!", playerID)}
 	w.Header().Set("Content-Type", "application/json")

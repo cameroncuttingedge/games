@@ -17,34 +17,39 @@ const (
 )
 
 type Game struct {
-	ID       string
-	Board    [3][3]Player
-	Turn     string
-	Winner   string
-	Over     bool
-	Players  [2]string
-	CurrentX string
-	Status   string
+	ID             string
+	Board          [3][3]Player
+	Turn           string
+	Winner         string
+	Over           bool
+	Players        [2]string
+	CurrentX       string
+	Status         string
+	RestartRequest map[string]bool
 }
 
 // NewGame initializes a new game with the first player
 func NewGame(gameID string, player1ID string) *Game {
-	return &Game{
-		ID:       gameID,
-		Board:    [3][3]Player{{None, None, None}, {None, None, None}, {None, None, None}},
-		Turn:     player1ID, // First player's turn by default
-		Players:  [2]string{player1ID, ""},
-		CurrentX: player1ID,
-		Status:   "waiting",
+
+	game := &Game{
+		ID:             gameID,
+		Board:          [3][3]Player{{None, None, None}, {None, None, None}, {None, None, None}},
+		Turn:           player1ID, // First player's turn by default
+		Players:        [2]string{player1ID, ""},
+		CurrentX:       player1ID,
+		Status:         "waiting",
+		RestartRequest: make(map[string]bool),
 	}
+
+	return game
 }
 
 func (g *Game) AddSecondPlayer(player2ID string) {
 	if g.Players[1] == "" && g.Status == "waiting" {
 		g.Players[1] = player2ID
 		g.Status = "active"
+		g.PublishState()
 	}
-	g.PublishState()
 }
 
 // SwapPlayers swaps the symbols for the players
@@ -69,9 +74,38 @@ func (g *Game) MakeMove(username string, x, y int) bool {
 	}
 
 	g.Board[x][y] = playerSymbol
+	win := g.CheckWin()
+	draw := g.CheckDraw()
+
+	if win || draw {
+		g.Over = true
+		if win {
+			g.Winner = username
+		}
+	}
+
 	g.SwitchTurn()
-	g.PublishState()
+	g.PublishState() // Ensure this is called to update all clients immediately
 	return true
+}
+
+func (g *Game) RequestRestart(playerID string) bool {
+	g.RestartRequest[playerID] = true
+	log.Info().Str("playerID", playerID).Str("gameID", g.ID).Msg("Restart requested")
+	// Check if both players requested a restart
+	if len(g.RestartRequest) == 2 {
+		// Reset game state for a new game, but keep players
+		g.Board = [3][3]Player{{None, None, None}, {None, None, None}, {None, None, None}}
+		g.Over = false
+		g.Winner = ""
+		g.RestartRequest = make(map[string]bool)
+		log.Info().Str("gameID", g.ID).Msg("Both players requested restart. Game state reset.")
+		// if true, update
+		g.PublishState()
+		return true
+	}
+	log.Info().Str("gameID", g.ID).Int("restartRequests", len(g.RestartRequest)).Msg("Waiting for the other player to request restart")
+	return false
 }
 
 func (g *Game) SwitchTurn() {
