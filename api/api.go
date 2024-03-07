@@ -33,8 +33,8 @@ func StartAPI() {
 	r.HandleFunc("/game/{gameID}/restart", RequestRestart).Methods("POST")
 	r.HandleFunc("/ws/game/state/{gameID}", websocket.GameWebSocketHandler)
 
-	fmt.Println("Server started on http://localhost:8080")
-	http.ListenAndServe(":8080", r)
+	fmt.Println("Server started on http://0.0.0.0:8080")
+	http.ListenAndServe("0.0.0.0:8080", r)
 }
 
 func RequestRestart(w http.ResponseWriter, r *http.Request) {
