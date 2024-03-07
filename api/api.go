@@ -42,10 +42,15 @@ func StartAPI() {
 		log.Info().Msg("Defaulting to port 8080")
 	}
 
-	corsOpts := handlers.AllowedOrigins([]string{"*"})
+	corsOpts := handlers.CORS(
+		handlers.AllowedOrigins([]string{"*"}),
+		handlers.AllowedMethods([]string{"GET", "POST", "OPTIONS"}),
+		handlers.AllowedHeaders([]string{"Content-Type", "Authorization"}),
+		handlers.AllowCredentials(),
+	)
 
 	log.Info().Msgf("Server started on http://0.0.0.0:%s", port)
-	if err := http.ListenAndServe("0.0.0.0:"+port, handlers.CORS(corsOpts)(r)); err != nil {
+	if err := http.ListenAndServe("0.0.0.0:"+port, corsOpts(r)); err != nil {
 		log.Fatal().Err(err).Msg("Error starting server")
 		os.Exit(1)
 	}
