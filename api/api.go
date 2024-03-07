@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"sync"
 
 	"github.com/cameroncuttingedge/tic_tac_toe/game"
@@ -26,6 +27,7 @@ type Move struct {
 func StartAPI() {
 	r := mux.NewRouter() // Create a new router
 
+	// Your route handlers setup
 	r.HandleFunc("/game/create", createGameHandler).Methods("POST")
 	r.HandleFunc("/game/{gameID}/join", joinGameHandler).Methods("POST")
 	r.HandleFunc("/game/{gameID}/move", makeMoveHandler).Methods("POST")
@@ -33,8 +35,17 @@ func StartAPI() {
 	r.HandleFunc("/game/{gameID}/restart", RequestRestart).Methods("POST")
 	r.HandleFunc("/ws/game/state/{gameID}", websocket.GameWebSocketHandler)
 
-	fmt.Println("Server started on http://0.0.0.0:8080")
-	http.ListenAndServe("0.0.0.0:8080", r)
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+		log.Info().Msg("Defaulting to port 8080")
+	}
+
+	log.Info().Msgf("Server started on http://0.0.0.0:%s", port)
+	if err := http.ListenAndServe("0.0.0.0:"+port, r); err != nil {
+		log.Fatal().Err(err).Msg("Error starting server")
+		os.Exit(1)
+	}
 }
 
 func RequestRestart(w http.ResponseWriter, r *http.Request) {
