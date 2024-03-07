@@ -105,6 +105,7 @@ func (g *Game) RequestRestart(playerID string) bool {
 		return true
 	}
 	log.Info().Str("gameID", g.ID).Int("restartRequests", len(g.RestartRequest)).Msg("Waiting for the other player to request restart")
+	g.PublishState()
 	return false
 }
 
@@ -175,14 +176,15 @@ func (g *Game) IsValidPlayer(username string) bool {
 
 func (g *Game) PublishState() {
 	gameState := events.GameState{
-		ID:       g.ID,
-		Board:    convertBoard(g.Board),
-		Turn:     g.Turn,
-		Winner:   g.Winner,
-		Over:     g.Over,
-		Players:  g.Players,
-		CurrentX: g.CurrentX,
-		Status:   g.Status,
+		ID:             g.ID,
+		Board:          convertBoard(g.Board),
+		Turn:           g.Turn,
+		Winner:         g.Winner,
+		Over:           g.Over,
+		Players:        g.Players,
+		CurrentX:       g.CurrentX,
+		Status:         g.Status,
+		RestartRequest: g.RestartRequest,
 	}
 	log.Info().
 		Str("gameID", g.ID).

@@ -117,11 +117,12 @@ func createGameHandler(w http.ResponseWriter, r *http.Request) {
 	gameID := utils.GenerateUUIDString()
 	newGame := game.NewGame(gameID, playerID)
 	utils.Games[gameID] = newGame
-	newGame.PublishState()
 
 	response := map[string]string{"gameID": gameID}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+	newGame.PublishState()
+
 }
 
 func joinGameHandler(w http.ResponseWriter, r *http.Request) {
@@ -234,13 +235,6 @@ func validateAndExtractMove(r *http.Request) (*Move, error) {
 func executeMoveAndUpdateState(game *game.Game, move *Move) error {
 	if !game.MakeMove(move.Username, move.X, move.Y) {
 		return fmt.Errorf("invalid move")
-	}
-
-	if game.CheckWin() {
-		game.Over = true
-		game.Winner = game.Turn
-	} else if game.CheckDraw() {
-		game.Over = true
 	}
 	return nil
 }
