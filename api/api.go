@@ -10,6 +10,7 @@ import (
 	"github.com/cameroncuttingedge/tic_tac_toe/game"
 	"github.com/cameroncuttingedge/tic_tac_toe/utils"
 	"github.com/cameroncuttingedge/tic_tac_toe/websocket"
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog/log"
 )
@@ -41,8 +42,10 @@ func StartAPI() {
 		log.Info().Msg("Defaulting to port 8080")
 	}
 
+	corsOpts := handlers.AllowedOrigins([]string{"*"})
+
 	log.Info().Msgf("Server started on http://0.0.0.0:%s", port)
-	if err := http.ListenAndServe("0.0.0.0:"+port, r); err != nil {
+	if err := http.ListenAndServe("0.0.0.0:"+port, handlers.CORS(corsOpts)(r)); err != nil {
 		log.Fatal().Err(err).Msg("Error starting server")
 		os.Exit(1)
 	}
