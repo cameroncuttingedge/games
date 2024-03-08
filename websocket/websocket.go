@@ -71,6 +71,8 @@ func BroadcastGameStateUpdate(gameID string, gameState events.GameState) {
 	}
 
 	log.Info().Str("gameID", gameID).Int("connectionsCount", len(connections)).Msg("Broadcasting game state update")
+	gameStateJSON, _ := json.Marshal(gameState)
+	log.Info().Str("gameID", gameID).RawJSON("gameStateJSON", gameStateJSON).Msg("Attempting to broadcast game state")
 	for i, conn := range connections {
 		if err := conn.WriteJSON(gameState); err != nil {
 			log.Error().Err(err).Str("gameID", gameID).Msgf("Failed to broadcast game state update to connection %d", i)

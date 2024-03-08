@@ -186,6 +186,10 @@ func (g *Game) PublishState() {
 		Status:         g.Status,
 		RestartRequest: g.RestartRequest,
 	}
+	if gameState.RestartRequest == nil {
+		gameState.RestartRequest = make(map[string]bool)
+	}
+
 	log.Info().
 		Str("gameID", g.ID).
 		Msg("Publishing game state")
@@ -245,6 +249,7 @@ func (g *Game) GetState() map[string]interface{} {
 	state["Players"] = g.Players
 	state["CurrentX"] = g.CurrentX
 	state["Status"] = g.Status
+	state["restartRequest"] = g.RestartRequest
 	return state
 }
 
