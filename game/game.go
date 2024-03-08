@@ -249,7 +249,7 @@ func (g *Game) GetState() map[string]interface{} {
 	state["Players"] = g.Players
 	state["CurrentX"] = g.CurrentX
 	state["Status"] = g.Status
-	state["restartRequest"] = g.RestartRequest
+	state["RestartRequest"] = g.RestartRequest
 	return state
 }
 

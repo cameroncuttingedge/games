@@ -185,6 +185,12 @@ func makeMoveHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if game.Winner != "" {
+		msg := "Game is over, cannot make a move."
+		http.Error(w, msg, http.StatusBadRequest)
+		return
+	}
+
 	err = executeMoveAndUpdateState(game, move)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
