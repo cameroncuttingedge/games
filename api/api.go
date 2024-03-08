@@ -101,10 +101,10 @@ func GetGameStateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	lock.Lock()
-	defer lock.Unlock()
-
 	game, exists := utils.Games[gameID]
-	if !exists {
+	lock.Unlock()
+
+	if !exists || game == nil {
 		http.Error(w, "Game not found", http.StatusNotFound)
 		return
 	}

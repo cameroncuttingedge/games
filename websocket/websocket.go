@@ -51,8 +51,15 @@ func GameWebSocketHandler(w http.ResponseWriter, r *http.Request) {
 
 func sendGameState(conn *websocket.Conn, gameID string) {
 	lock.Lock()
-	gameState := utils.Games[gameID].GetState()
+	game, exists := utils.Games[gameID]
 	lock.Unlock()
+
+	if !exists || game == nil {
+		log.Error().Str("gameID", gameID).Msg("Game not found or is nil, cannot send game state")
+		return
+	}
+
+	gameState := game.GetState()
 
 	if err := conn.WriteJSON(gameState); err != nil {
 		log.Error().Err(err).Str("gameID", gameID).Msg("Error sending game state")
